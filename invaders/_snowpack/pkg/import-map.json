@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "snabbdom": "./snabbdom.js"
+  }
+}
