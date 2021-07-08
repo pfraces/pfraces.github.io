@@ -1,6 +1,10 @@
-import { mount, h, animation, collider } from './lib/game-engine.js';
+import { mount, h, keyboard, animation, collider } from './lib/game-engine.js';
 import { store } from './lib/store.js';
-import { noop, constant } from './lib/fp.js';
+import { constant } from './lib/fp.js';
+
+// -----
+// Enums
+// -----
 
 const menu = {
   none: 'none',
@@ -23,6 +27,7 @@ const settings = {
   invaderRows: 5,
   invadersMinVelocity: 50,
   invadersIncrementVelocity: 15,
+  defenderVelocity: 50,
   projectilesVelocity: 50,
   maxConcurrentProjectiles: 1
 };
@@ -31,11 +36,39 @@ const settings = {
 // Store
 // -----
 
-const gameState = store(function () {
-  const { gridCols, gridRows, invaderCols, invaderRows } = settings;
-  const colEnd = gridRows - 1;
+const invaderType = function (row) {
+  if (row === 0) {
+    return 'alfa';
+  }
+
+  if (row <= 2) {
+    return 'beta';
+  }
+
+  return 'gamma';
+};
+
+const initInvaders = function () {
+  const { gridCols, invaderCols, invaderRows } = settings;
   const invaderOffsetX = (gridCols - invaderCols) / 2;
   const invaderOffsetY = 1;
+
+  return [...Array(invaderRows)]
+    .map(function (row, rowIndex) {
+      return [...Array(invaderCols)].map(function (col, colIndex) {
+        return {
+          type: invaderType(rowIndex),
+          x: colIndex + invaderOffsetX,
+          y: rowIndex + invaderOffsetY
+        };
+      });
+    })
+    .flat();
+};
+
+const gameState = store(function () {
+  const { gridCols, gridRows } = settings;
+  const colEnd = gridRows - 1;
 
   return {
     currentMenu: menu.controls,
@@ -43,15 +76,11 @@ const gameState = store(function () {
       x: Math.ceil(gridCols / 2) - 1,
       y: colEnd
     },
+    defenderDirection: 0,
     projectiles: [],
-    invadersDirection: 1,
-    invaders: [...Array(invaderRows)]
-      .map(function (row, rowIndex) {
-        return [...Array(invaderCols)].map(function (col, colIndex) {
-          return { x: colIndex + invaderOffsetX, y: rowIndex + invaderOffsetY };
-        });
-      })
-      .flat()
+    explosions: [],
+    invaders: initInvaders(),
+    invadersDirection: 1
   };
 });
 
@@ -62,6 +91,8 @@ const { onStateChange, getState, setState, resetState, withState } = gameState;
 // ------------
 
 const play = function () {
+  keyboard.reset();
+
   setState(function (state) {
     return {
       ...state,
@@ -71,6 +102,8 @@ const play = function () {
 };
 
 const pause = function () {
+  keyboard.reset();
+
   setState(function (state) {
     return {
       ...state,
@@ -79,14 +112,16 @@ const pause = function () {
   });
 };
 
+const reset = function () {
+  keyboard.reset();
+  resetState();
+};
+
 const moveDefenderLeft = function () {
   setState(function (state) {
     return {
       ...state,
-      defender: {
-        ...state.defender,
-        x: state.defender.x - 1
-      }
+      defenderDirection: -1
     };
   });
 };
@@ -95,10 +130,7 @@ const moveDefenderRight = function () {
   setState(function (state) {
     return {
       ...state,
-      defender: {
-        ...state.defender,
-        x: state.defender.x + 1
-      }
+      defenderDirection: 1
     };
   });
 };
@@ -129,54 +161,59 @@ const fire = function () {
   });
 };
 
-const gameKeyBindings = {
-  Escape: pause,
-  ArrowLeft: moveDefenderLeft,
-  ArrowRight: moveDefenderRight,
-  Spacebar: fire
+const onMenu = function (menuId, action) {
+  return function () {
+    const idMatches = getState(function ({ currentMenu }) {
+      return currentMenu === menuId;
+    });
+
+    if (idMatches) {
+      action();
+    }
+  };
 };
 
-const menuKeyBindings = {
-  controls: {
-    Spacebar: play
-  },
-  pause: {
-    Spacebar: play
-  },
-  youwin: {
-    Escape: resetState
-  },
-  gameover: {
-    Escape: resetState
-  }
-};
+keyboard.bind('ArrowLeft', onMenu(menu.none, moveDefenderLeft));
+keyboard.bind('ArrowRight', onMenu(menu.none, moveDefenderRight));
+keyboard.bind('Space', onMenu(menu.none, fire));
+keyboard.bind('Escape', onMenu(menu.none, pause));
 
-const onKeyDown = function (event) {
-  let key = event.key;
-
-  if (key === ' ') {
-    key = 'Spacebar';
-  }
-
-  const currentMenu = getState(function ({ currentMenu }) {
-    return currentMenu;
-  });
-
-  if (currentMenu === menu.none) {
-    (gameKeyBindings[key] || noop)();
-    return;
-  }
-
-  (menuKeyBindings[currentMenu][key] || noop)();
-};
-
-document.addEventListener('keydown', onKeyDown);
+keyboard.bind('Space', onMenu(menu.controls, play));
+keyboard.bind('Space', onMenu(menu.pause, play));
+keyboard.bind('Escape', onMenu(menu.youwin, reset));
+keyboard.bind('Escape', onMenu(menu.gameover, reset));
 
 // ----------
 // Animations
 // ----------
 
+const defenderAnimation = {
+  velocity: constant(settings.defenderVelocity),
+  update: function () {
+    setState(function (state) {
+      return {
+        ...state,
+        defender: {
+          ...state.defender,
+          x: state.defender.x + state.defenderDirection
+        },
+        defenderDirection: 0
+      };
+    });
+  }
+};
+
+const invadersVelocity = function () {
+  const { invadersMinVelocity, invadersIncrementVelocity } = settings;
+
+  return getState(function (state) {
+    const invadersLength = state.invaders.length;
+    return invadersMinVelocity + invadersLength * invadersIncrementVelocity;
+  });
+};
+
 const invadersAnimation = {
+  velocity: invadersVelocity,
   update: function () {
     setState(function (state) {
       return {
@@ -189,18 +226,11 @@ const invadersAnimation = {
         })
       };
     });
-  },
-  velocity: function () {
-    const { invadersMinVelocity, invadersIncrementVelocity } = settings;
-
-    return getState(function (state) {
-      const invadersLength = state.invaders.length;
-      return invadersMinVelocity + invadersLength * invadersIncrementVelocity;
-    });
   }
 };
 
 const projectilesAnimation = {
+  velocity: constant(settings.projectilesVelocity),
   update: function () {
     setState(function (state) {
       return {
@@ -213,12 +243,25 @@ const projectilesAnimation = {
         })
       };
     });
-  },
-  velocity: constant(settings.projectilesVelocity)
+  }
 };
 
+const explosionsAnimation = {
+  velocity: invadersVelocity,
+  update: function () {
+    setState(function (state) {
+      return {
+        ...state,
+        explosions: []
+      };
+    });
+  }
+};
+
+animation.add(defenderAnimation);
 animation.add(invadersAnimation);
 animation.add(projectilesAnimation);
+animation.add(explosionsAnimation);
 
 // ---------
 // Colliders
@@ -276,6 +319,7 @@ const invadersOutOfBoundsCollider = function () {
 
       invaders = invaders.map(function (invader) {
         return {
+          ...invader,
           x: invader.x + invadersDirection,
           y: invader.y + 1
         };
@@ -362,6 +406,7 @@ const projectileHitCollider = function () {
       ...state,
       currentMenu,
       projectiles,
+      explosions: [...state.explosions, ...collisions],
       invaders
     };
   });
@@ -386,10 +431,10 @@ onStateChange(function ({ currentMenu }) {
 // Components
 // ----------
 
-const entityComponent = function ({ type, x, y }) {
+const spriteComponent = function ({ className, x, y }) {
   const { cellSize } = settings;
 
-  return h(`div.${type}`, {
+  return h(`div.${className}`, {
     style: {
       width: cellSize,
       height: cellSize,
@@ -399,22 +444,32 @@ const entityComponent = function ({ type, x, y }) {
   });
 };
 
-const invaderComponent = function ({ x, y }) {
-  return entityComponent({ type: 'invader', x, y });
+const invaderComponent = function ({ type, x, y }) {
+  return spriteComponent({ className: `invader-${type}`, x, y });
 };
 
 const defenderComponent = function ({ x, y }) {
-  return entityComponent({ type: 'defender', x, y });
+  return spriteComponent({ className: 'defender', x, y });
 };
 
 const projectileComponent = function ({ x, y }) {
-  return entityComponent({ type: 'projectile', x, y });
+  return spriteComponent({ className: 'projectile', x, y });
 };
 
-const actionLayerComponent = function ({ invaders, projectiles, defender }) {
-  return h('div.action-layer', [
+const explosionComponent = function ({ x, y }) {
+  return spriteComponent({ className: 'explosion', x, y });
+};
+
+const worldLayerComponent = function ({
+  invaders,
+  projectiles,
+  explosions,
+  defender
+}) {
+  return h('div.world-layer', [
     ...invaders.map(invaderComponent),
     ...projectiles.map(projectileComponent),
+    ...explosions.map(explosionComponent),
     defenderComponent(defender)
   ]);
 };
@@ -500,7 +555,7 @@ const menuLayerComponent = function ({ currentMenu }) {
 
 const canvasComponent = function ({ state }) {
   const { fontSize, cellSize, gridCols, gridRows } = settings;
-  const { currentMenu, invaders, projectiles, defender } = state;
+  const { currentMenu, invaders, projectiles, explosions, defender } = state;
 
   return h(
     'div.canvas',
@@ -512,7 +567,7 @@ const canvasComponent = function ({ state }) {
       }
     },
     [
-      actionLayerComponent({ invaders, projectiles, defender }),
+      worldLayerComponent({ invaders, projectiles, explosions, defender }),
       menuLayerComponent({ currentMenu })
     ]
   );

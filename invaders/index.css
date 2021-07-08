@@ -20,37 +20,41 @@ body {
   position: relative;
   overflow: hidden;
   border: 1px solid yellow;
+  padding: 10px;
 }
 
-.grid-layer {
-  position: absolute;
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.cell {
-  box-sizing: border-box;
-  background-color: lightgrey;
-  border: 1px solid white;
-}
-
-.action-layer {
+.world-layer {
   position: absolute;
 }
 
-.invader {
+.invader-alfa {
   position: absolute;
-  background-color: purple;
+  background-image: url(/assets/invader-alfa.png);
+}
+
+.invader-beta {
+  position: absolute;
+  background-image: url(/assets/invader-beta.png);
+}
+
+.invader-gamma {
+  position: absolute;
+  background-image: url(/assets/invader-gamma.png);
 }
 
 .defender {
   position: absolute;
-  background-color: blue;
+  background-image: url(/assets/ironrocket.png);
 }
 
 .projectile {
   position: absolute;
-  background-color: yellow;
+  background-image: url(/assets/laser.png);
+}
+
+.explosion {
+  position: absolute;
+  background-color: transparent;
 }
 
 .menu-layer {
@@ -59,7 +63,7 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.85);
   color: yellow;
 }
 
