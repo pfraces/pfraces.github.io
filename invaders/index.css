@@ -29,27 +29,27 @@ body {
 
 .invader-alfa {
   position: absolute;
-  background-image: url(/assets/invader-alfa.png);
+  background-image: url(./assets/invader-alfa.png);
 }
 
 .invader-beta {
   position: absolute;
-  background-image: url(/assets/invader-beta.png);
+  background-image: url(./assets/invader-beta.png);
 }
 
 .invader-gamma {
   position: absolute;
-  background-image: url(/assets/invader-gamma.png);
+  background-image: url(./assets/invader-gamma.png);
 }
 
 .defender {
   position: absolute;
-  background-image: url(/assets/ironrocket.png);
+  background-image: url(./assets/ironrocket.png);
 }
 
 .projectile {
   position: absolute;
-  background-image: url(/assets/laser.png);
+  background-image: url(./assets/laser.png);
 }
 
 .explosion {
