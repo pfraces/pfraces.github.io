@@ -27,6 +27,11 @@ body {
   position: absolute;
 }
 
+.mystery-ship {
+  position: absolute;
+  background-image: url(./assets/mystery-ship.png);
+}
+
 .invader-alfa {
   position: absolute;
   background-image: url(./assets/invader-alfa.png);
@@ -44,17 +49,17 @@ body {
 
 .defender {
   position: absolute;
-  background-image: url(./assets/ironrocket.png);
+  background-image: url(./assets/defender.png);
 }
 
 .projectile {
   position: absolute;
-  background-image: url(./assets/laser.png);
+  background-image: url(./assets/projectile.png);
 }
 
 .explosion {
   position: absolute;
-  background-color: transparent;
+  background-image: url(./assets/explosion.png);
 }
 
 .menu-layer {
