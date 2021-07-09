@@ -573,8 +573,16 @@ const canvasComponent = function ({ state }) {
   );
 };
 
+const containerComponent = function ({ state }) {
+  return h('div.container', [canvasComponent({ state })]);
+};
+
+const rootComponent = function ({ state }) {
+  return h('div.root', [containerComponent({ state })]);
+};
+
 // ----
 // Init
 // ----
 
-mount(document.getElementById('canvas'), withState(canvasComponent));
+mount(document.getElementById('root'), withState(rootComponent));
