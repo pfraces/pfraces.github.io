@@ -1,4 +1,12 @@
-import { mount, h, keyboard, animation, collider } from './lib/game-engine.js';
+import {
+  mount,
+  h,
+  keyboard,
+  sound,
+  animation,
+  collider
+} from './lib/game-engine.js';
+
 import { store } from './lib/store.js';
 import { constant } from './lib/fp.js';
 
@@ -138,6 +146,22 @@ const moveDefenderRight = function () {
 const fire = function () {
   const { maxConcurrentProjectiles } = settings;
 
+  const canFire = getState(function (state) {
+    const { defender, projectiles } = state;
+
+    const projectileOverlap = projectiles.find(function (projectile) {
+      return projectile.y === defender.y - 1;
+    });
+
+    return !projectileOverlap && projectiles.length < maxConcurrentProjectiles;
+  });
+
+  if (!canFire) {
+    return;
+  }
+
+  sound.play('fire');
+
   setState(function (state) {
     const { projectiles } = state;
 
@@ -145,14 +169,6 @@ const fire = function () {
       x: state.defender.x,
       y: state.defender.y - 1
     };
-
-    const projectileOverlap = projectiles.find(function (projectile) {
-      return newProjectile.y === projectile.y;
-    });
-
-    if (projectileOverlap || projectiles.length === maxConcurrentProjectiles) {
-      return state;
-    }
 
     return {
       ...state,
@@ -182,6 +198,15 @@ keyboard.bind('Space', onMenu(menu.controls, play));
 keyboard.bind('Space', onMenu(menu.pause, play));
 keyboard.bind('Escape', onMenu(menu.youwin, reset));
 keyboard.bind('Escape', onMenu(menu.gameover, reset));
+
+// ------
+// Sounds
+// ------
+
+sound.load('invader', './assets/invader.ogg');
+sound.load('mystery-ship', './assets/mystery-ship.ogg');
+sound.load('fire', './assets/fire.ogg');
+sound.load('explosion', './assets/explosion.ogg');
 
 // ----------
 // Animations
@@ -215,6 +240,8 @@ const invadersVelocity = function () {
 const invadersAnimation = {
   velocity: invadersVelocity,
   update: function () {
+    sound.play('invader');
+
     setState(function (state) {
       return {
         ...state,
@@ -368,22 +395,25 @@ const projectileLostCollider = function () {
 };
 
 const projectileHitCollider = function () {
-  setState(function (state) {
-    const collisions = [];
+  const collisions = getState(function (state) {
+    const { invaders, projectiles } = state;
 
-    state.projectiles.forEach(function (projectile) {
-      const collidedInvader = state.invaders.find(function (invader) {
-        return invader.x === projectile.x && invader.y === projectile.y;
-      });
-
-      if (collidedInvader) {
-        collisions.push({
-          x: collidedInvader.x,
-          y: collidedInvader.y
+    return invaders
+      .filter(function (invader) {
+        return projectiles.some(function (projectile) {
+          return projectile.x === invader.x && projectile.y === invader.y;
         });
-      }
-    });
+      })
+      .map(function ({ x, y }) {
+        return { x, y };
+      });
+  });
 
+  if (collisions.length) {
+    sound.play('explosion');
+  }
+
+  setState(function (state) {
     const projectiles = state.projectiles.filter(function (projectile) {
       return !collisions.find(function (collision) {
         return projectile.x === collision.x && projectile.y === collision.y;

@@ -52,6 +52,27 @@ export const keyboard = {
   reset: resetPressedKeys
 };
 
+// ------
+// Sounds
+// ------
+
+const sounds = {};
+
+const loadSound = function (name, file) {
+  sounds[name] = new Audio(file);
+};
+
+const playSound = function (name) {
+  const sound = sounds[name];
+  sound.currentTime = 0;
+  sound.play();
+};
+
+export const sound = {
+  load: loadSound,
+  play: playSound
+};
+
 // ----------
 // Animations
 // ----------
