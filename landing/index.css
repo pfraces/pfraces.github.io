@@ -16,6 +16,15 @@ li {
   list-style: none;
 }
 
+a {
+  text-decoration: none;
+  color: #00a4fc;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
 header {
   box-sizing: border-box;
   width: 100%;
@@ -43,6 +52,22 @@ article h2 {
   margin: 0 auto;
 }
 
+.row {
+  display: flex;
+}
+
+.space-between {
+  justify-content: space-between;
+}
+
+.align-center {
+  align-items: center;
+}
+
+.available-width {
+  width: 100%;
+}
+
 .avatar {
   background-image: url(./avatar.svg);
   background-size: contain;
@@ -54,7 +79,6 @@ article h2 {
 
 .projects li {
   margin: 1rem auto;
-  display: flex;
   overflow: hidden;
   border-radius: 10px;
   box-shadow: 0 2px 1px -1px rgb(0 0 0 / 20%), 0 1px 1px 0 rgb(0 0 0 / 14%), 0 1px 3px 0 rgb(0 0 0 / 12%);
@@ -70,11 +94,17 @@ article h2 {
 }
 
 .description {
-  padding: 10px;
+  padding: 10px 15px;
+  width: 100%;
 }
 
 .description p {
   margin: 0;
   margin-top: 10px;
   font-size: 0.9rem;
+}
+
+.action-icon {
+  width: 24px;
+  height: 24px;
 }
