@@ -5,3 +5,9 @@ export const menu = {
   youwin: 'youwin',
   gameover: 'gameover'
 };
+
+export const invaderType = {
+  alfa: 'alfa',
+  beta: 'beta',
+  gamma: 'gamma'
+};

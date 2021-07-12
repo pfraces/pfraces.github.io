@@ -1,24 +1,24 @@
 import { mount, keyboard, sound, animation, collider } from './lib/game-engine.js';
 import { store } from './lib/store.js';
 import { constant } from './lib/fp.js';
-import { menu } from './model.js';
-import { settings } from './settings.js';
+import { menu, invaderType } from './model.js';
+import { settings, invaderScore } from './settings.js';
 import { rootComponent } from './components/root-component.js';
 
 // -----
 // State
 // -----
 
-const invaderType = function (row) {
+const invaderTypeByRow = function (row) {
   if (row === 0) {
-    return 'alfa';
+    return invaderType.alfa;
   }
 
   if (row <= 2) {
-    return 'beta';
+    return invaderType.beta;
   }
 
-  return 'gamma';
+  return invaderType.gamma;
 };
 
 const initInvaders = function () {
@@ -32,7 +32,7 @@ const initInvaders = function () {
     const colIndex = index % invaderCols;
 
     return {
-      type: invaderType(rowIndex),
+      type: invaderTypeByRow(rowIndex),
       x: colIndex + invaderOffsetX,
       y: rowIndex + invaderOffsetY
     };
@@ -45,6 +45,7 @@ const gameState = store(function () {
 
   return {
     currentMenu: menu.controls,
+    score: 0,
     defender: {
       x: Math.ceil(gridCols / 2) - 1,
       y: colEnd
@@ -369,20 +370,22 @@ const projectilesHitCollider = {
     const collisions = getState(function (state) {
       const { invaders, projectiles } = state;
 
-      return invaders
-        .filter(function (invader) {
-          return projectiles.some(function (projectile) {
-            return projectile.x === invader.x && projectile.y === invader.y;
-          });
-        })
-        .map(function ({ x, y }) {
-          return { x, y };
+      return invaders.filter(function (invader) {
+        return projectiles.some(function (projectile) {
+          return projectile.x === invader.x && projectile.y === invader.y;
         });
+      });
     });
 
-    if (collisions.length) {
-      sound.play('explosion');
+    if (!collisions.length) {
+      return;
     }
+
+    sound.play('explosion');
+
+    const scoreIncrement = collisions.reduce(function (acc, collision) {
+      return acc + invaderScore[collision.type];
+    }, 0);
 
     setState(function (state) {
       const projectiles = state.projectiles.filter(function (projectile) {
@@ -406,6 +409,7 @@ const projectilesHitCollider = {
       return {
         ...state,
         currentMenu,
+        score: state.score + scoreIncrement,
         projectiles,
         explosions: [...state.explosions, ...collisions],
         invaders

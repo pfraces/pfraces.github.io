@@ -11,3 +11,9 @@ export const settings = {
   projectilesVelocity: 50,
   maxConcurrentProjectiles: 1
 };
+
+export const invaderScore = {
+  alfa: 30,
+  beta: 20,
+  gamma: 10
+};

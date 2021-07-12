@@ -1,11 +1,13 @@
 import { h } from '../lib/game-engine.js';
 import { settings } from '../settings.js';
 import { worldLayerComponent } from './word-layer-component.js';
+import { statsLayerComponent } from './stats-layer-component.js';
 import { menuLayerComponent } from './menu-layer-component.js';
 
 const canvasComponent = function ({ state }) {
   const { fontSize, cellSize, gridCols, gridRows } = settings;
-  const { currentMenu, invaders, projectiles, explosions, defender } = state;
+  const { currentMenu, score, invaders, projectiles, explosions, defender } =
+    state;
 
   return h(
     'div.canvas',
@@ -18,6 +20,7 @@ const canvasComponent = function ({ state }) {
     },
     [
       worldLayerComponent({ invaders, projectiles, explosions, defender }),
+      statsLayerComponent({ score }),
       menuLayerComponent({ currentMenu })
     ]
   );
