@@ -1,6 +1,7 @@
 export const store = function (init) {
   let state = init();
   const listeners = [];
+  let canEmitChanges = true;
 
   const onStateChange = function (listener) {
     listeners.push(listener);
@@ -10,12 +11,22 @@ export const store = function (init) {
     return selector(state);
   };
 
-  const setState = function (update) {
-    state = update(state);
+  const emitStateChanges = function () {
+    canEmitChanges = false;
 
     listeners.forEach(function (listener) {
       listener(state);
     });
+
+    canEmitChanges = true;
+  };
+
+  const setState = function (update) {
+    state = update(state);
+
+    if (canEmitChanges) {
+      emitStateChanges();
+    }
   };
 
   const resetState = function () {

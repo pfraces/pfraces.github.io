@@ -11,6 +11,10 @@ body {
 
 .root {
   height: 100%;
+}
+
+.layout {
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -24,6 +28,7 @@ body {
 .canvas {
   position: relative;
   overflow: hidden;
+  background-image: url(./assets/space-background.png);
 }
 
 .world-layer {

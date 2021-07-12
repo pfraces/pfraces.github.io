@@ -1,47 +1,12 @@
-import {
-  mount,
-  h,
-  keyboard,
-  sound,
-  animation,
-  collider
-} from './lib/game-engine.js';
-
+import { mount, keyboard, sound, animation, collider } from './lib/game-engine.js';
 import { store } from './lib/store.js';
 import { constant } from './lib/fp.js';
+import { menu } from './model.js';
+import { settings } from './settings.js';
+import { rootComponent } from './components/root-component.js';
 
 // -----
-// Enums
-// -----
-
-const menu = {
-  none: 'none',
-  controls: 'controls',
-  pause: 'pause',
-  youwin: 'youwin',
-  gameover: 'gameover'
-};
-
-// --------
-// Settings
-// --------
-
-const settings = {
-  fontSize: '20px',
-  cellSize: '32px',
-  gridCols: 17,
-  gridRows: 17,
-  invaderCols: 11,
-  invaderRows: 5,
-  invadersMinVelocity: 50,
-  invadersIncrementVelocity: 15,
-  defenderVelocity: 50,
-  projectilesVelocity: 50,
-  maxConcurrentProjectiles: 1
-};
-
-// -----
-// Store
+// State
 // -----
 
 const invaderType = function (row) {
@@ -58,20 +23,20 @@ const invaderType = function (row) {
 
 const initInvaders = function () {
   const { gridCols, invaderCols, invaderRows } = settings;
+  const invaderCells = invaderRows * invaderCols;
   const invaderOffsetX = (gridCols - invaderCols) / 2;
   const invaderOffsetY = 1;
 
-  return [...Array(invaderRows)]
-    .map(function (row, rowIndex) {
-      return [...Array(invaderCols)].map(function (col, colIndex) {
-        return {
-          type: invaderType(rowIndex),
-          x: colIndex + invaderOffsetX,
-          y: rowIndex + invaderOffsetY
-        };
-      });
-    })
-    .flat();
+  return [...Array(invaderCells)].map(function (_, index) {
+    const rowIndex = Math.floor(index / invaderCols);
+    const colIndex = index % invaderCols;
+
+    return {
+      type: invaderType(rowIndex),
+      x: colIndex + invaderOffsetX,
+      y: rowIndex + invaderOffsetY
+    };
+  });
 };
 
 const gameState = store(function () {
@@ -203,7 +168,7 @@ keyboard.bind('Escape', onMenu(menu.gameover, reset));
 // Sounds
 // ------
 
-sound.load({ name: 'invader', url: './assets/invader.ogg', volume: 0.5 });
+sound.load({ name: 'invader', url: './assets/invader.ogg', volume: 0.3 });
 sound.load({ name: 'mystery-ship', url: './assets/mystery-ship.ogg' });
 sound.load({ name: 'fire', url: './assets/fire.ogg' });
 sound.load({ name: 'explosion', url: './assets/explosion.ogg' });
@@ -285,7 +250,7 @@ animation.add(projectilesAnimation);
 
 const defenderOutOfBoundsCollider = {
   animations: ['defender'],
-  response: function () {
+  respond: function () {
     const { gridCols } = settings;
     const rowStart = 0;
     const rowEnd = gridCols - 1;
@@ -314,7 +279,7 @@ const defenderOutOfBoundsCollider = {
 
 const invadersOutOfBoundsCollider = {
   animations: ['invaders'],
-  response: function () {
+  respond: function () {
     const { gridCols } = settings;
     const rowStart = 0;
     const rowEnd = gridCols - 1;
@@ -358,7 +323,7 @@ const invadersOutOfBoundsCollider = {
 
 const invadersLandingCollider = {
   animations: ['invaders'],
-  response: function () {
+  respond: function () {
     setState(function (state) {
       const { gridRows } = settings;
       const colEnd = gridRows - 1;
@@ -368,13 +333,16 @@ const invadersLandingCollider = {
       });
 
       let currentMenu = state.currentMenu;
+      let defender = state.defender;
 
       if (invaderLanded) {
         currentMenu = menu.gameover;
+        defender = null;
       }
 
       return {
         ...state,
+        defender,
         currentMenu
       };
     });
@@ -383,7 +351,7 @@ const invadersLandingCollider = {
 
 const projectilesOutOfBoundsCollider = {
   animations: ['projectiles'],
-  response: function () {
+  respond: function () {
     setState(function (state) {
       return {
         ...state,
@@ -397,7 +365,7 @@ const projectilesOutOfBoundsCollider = {
 
 const projectilesHitCollider = {
   animations: ['projectiles', 'invaders'],
-  response: function () {
+  respond: function () {
     const collisions = getState(function (state) {
       const { invaders, projectiles } = state;
 
@@ -461,162 +429,9 @@ onStateChange(function ({ currentMenu }) {
   animation[action]();
 });
 
-// ----------
-// Components
-// ----------
-
-const spriteComponent = function ({ className, x, y }) {
-  const { cellSize } = settings;
-
-  return h(`div.${className}`, {
-    style: {
-      width: cellSize,
-      height: cellSize,
-      left: `calc(${x} * ${cellSize})`,
-      top: `calc(${y} * ${cellSize})`
-    }
-  });
-};
-
-const invaderComponent = function ({ type, x, y }) {
-  return spriteComponent({ className: `invader-${type}`, x, y });
-};
-
-const defenderComponent = function ({ x, y }) {
-  return spriteComponent({ className: 'defender', x, y });
-};
-
-const projectileComponent = function ({ x, y }) {
-  return spriteComponent({ className: 'projectile', x, y });
-};
-
-const explosionComponent = function ({ x, y }) {
-  return spriteComponent({ className: 'explosion', x, y });
-};
-
-const worldLayerComponent = function ({
-  invaders,
-  projectiles,
-  explosions,
-  defender
-}) {
-  return h('div.world-layer', [
-    ...invaders.map(invaderComponent),
-    ...projectiles.map(projectileComponent),
-    ...explosions.map(explosionComponent),
-    defenderComponent(defender)
-  ]);
-};
-
-const menuTitleComponent = function () {
-  const { fontSize } = settings;
-
-  return h(
-    'pre.menu-title',
-    {
-      style: {
-        fontSize: `calc(${fontSize} * 0.75)`
-      }
-    },
-    [
-      '    ____                     __              ',
-      '   /  _/___ _   ______ _____/ /__  __________',
-      '   / // __ \\ | / / __ `/ __  / _ \\/ ___/ ___/',
-      ' _/ // / / / |/ / /_/ / /_/ /  __/ /  (__  ) ',
-      '/___/_/ /_/|___/\\__,_/\\__,_/\\___/_/  /____/  '
-    ].join('\n')
-  );
-};
-
-const menuContentControlsComponent = function () {
-  return h('div.menu-content', [
-    h('p', 'CONTROLS'),
-    h('ul', [
-      h('li', 'LEFT / RIGHT: Move defender'),
-      h('li', 'SPACEBAR: Fire'),
-      h('li', 'ESCAPE: Pause')
-    ]),
-    h('p', 'Press SPACEBAR to start')
-  ]);
-};
-
-const menuContentPauseComponent = function () {
-  return h('div.menu-content', [
-    h('p', 'PAUSED'),
-    h('p', 'Press SPACEBAR to resume')
-  ]);
-};
-
-const menuContentYouWinComponent = function () {
-  return h('div.menu-content', [
-    h('p', 'YOU WIN!'),
-    h('p', 'Press ESCAPE to restart')
-  ]);
-};
-
-const menuContentGameOverComponent = function () {
-  return h('div.menu-content', [
-    h('p', 'GAME OVER'),
-    h('p', 'Press ESCAPE to restart')
-  ]);
-};
-
-const menuLayerComponent = function ({ currentMenu }) {
-  if (currentMenu === menu.none) {
-    return null;
-  }
-
-  let menuContentComponent = constant(null);
-
-  if (currentMenu === menu.controls) {
-    menuContentComponent = menuContentControlsComponent;
-  }
-
-  if (currentMenu === menu.pause) {
-    menuContentComponent = menuContentPauseComponent;
-  }
-
-  if (currentMenu === menu.youwin) {
-    menuContentComponent = menuContentYouWinComponent;
-  }
-
-  if (currentMenu === menu.gameover) {
-    menuContentComponent = menuContentGameOverComponent;
-  }
-
-  return h('div.menu-layer', [menuTitleComponent(), menuContentComponent()]);
-};
-
-const canvasComponent = function ({ state }) {
-  const { fontSize, cellSize, gridCols, gridRows } = settings;
-  const { currentMenu, invaders, projectiles, explosions, defender } = state;
-
-  return h(
-    'div.canvas',
-    {
-      style: {
-        fontSize,
-        width: `calc(${cellSize} * ${gridCols})`,
-        height: `calc(${cellSize} * ${gridRows})`
-      }
-    },
-    [
-      worldLayerComponent({ invaders, projectiles, explosions, defender }),
-      menuLayerComponent({ currentMenu })
-    ]
-  );
-};
-
-const containerComponent = function ({ state }) {
-  return h('div.container', [canvasComponent({ state })]);
-};
-
-const rootComponent = function ({ state }) {
-  return h('div.root', [containerComponent({ state })]);
-};
-
 // ----
 // Init
 // ----
 
 mount(document.getElementById('root'), withState(rootComponent));
+keyboard.listen();
