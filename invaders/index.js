@@ -1,8 +1,14 @@
-import { mount, keyboard, sound, animation, collider } from './lib/game-engine.js';
+import {
+  keyboard,
+  sound,
+  animation,
+  collider,
+  mount
+} from './lib/engine/engine.js';
 import { store } from './lib/store.js';
 import { constant } from './lib/fp.js';
 import { menu, invaderType } from './model.js';
-import { settings, invaderScore } from './settings.js';
+import { settings } from './settings.js';
 import { rootComponent } from './components/root-component.js';
 
 // -----
@@ -22,9 +28,10 @@ const invaderTypeByRow = function (row) {
 };
 
 const initInvaders = function () {
-  const { gridCols, invaderCols, invaderRows } = settings;
+  const { cols } = settings.grid;
+  const { invaderCols, invaderRows } = settings.scene;
   const invaderCells = invaderRows * invaderCols;
-  const invaderOffsetX = (gridCols - invaderCols) / 2;
+  const invaderOffsetX = (cols - invaderCols) / 2;
   const invaderOffsetY = 1;
 
   return [...Array(invaderCells)].map(function (_, index) {
@@ -40,25 +47,26 @@ const initInvaders = function () {
 };
 
 const gameState = store(function () {
-  const { gridCols, gridRows } = settings;
-  const colEnd = gridRows - 1;
+  const { cols, rows } = settings.grid;
+  const rowEnd = rows - 1;
 
   return {
     currentMenu: menu.controls,
     score: 0,
     defender: {
-      x: Math.ceil(gridCols / 2) - 1,
-      y: colEnd
+      x: Math.ceil(cols / 2) - 1,
+      y: rowEnd
     },
     defenderDirection: 0,
     projectiles: [],
     explosions: [],
     invaders: initInvaders(),
-    invadersDirection: 1
+    invadersDirection: 1,
+    mysteryShip: null
   };
 });
 
-const { onStateChange, getState, setState, resetState, withState } = gameState;
+const { getState, setState, resetState, withState } = gameState;
 
 // ------------
 // Key Bindings
@@ -66,6 +74,7 @@ const { onStateChange, getState, setState, resetState, withState } = gameState;
 
 const play = function () {
   keyboard.reset();
+  animation.run();
 
   setState(function (state) {
     return {
@@ -77,6 +86,7 @@ const play = function () {
 
 const pause = function () {
   keyboard.reset();
+  animation.stop();
 
   setState(function (state) {
     return {
@@ -87,8 +97,9 @@ const pause = function () {
 };
 
 const reset = function () {
-  keyboard.reset();
   resetState();
+  keyboard.reset();
+  animation.reset();
 };
 
 const moveDefenderLeft = function () {
@@ -110,16 +121,16 @@ const moveDefenderRight = function () {
 };
 
 const fire = function () {
-  const { maxConcurrentProjectiles } = settings;
+  const { maxConcurrency, cooldown } = settings.projectile;
 
   const canFire = getState(function (state) {
     const { defender, projectiles } = state;
 
     const projectileOverlap = projectiles.find(function (projectile) {
-      return projectile.y === defender.y - 1;
+      return projectile.y >= defender.y - (1 + cooldown);
     });
 
-    return !projectileOverlap && projectiles.length < maxConcurrentProjectiles;
+    return !projectileOverlap && projectiles.length < maxConcurrency;
   });
 
   if (!canFire) {
@@ -170,7 +181,7 @@ keyboard.bind('Escape', onMenu(menu.gameover, reset));
 // ------
 
 sound.load({ name: 'invader', url: './assets/invader.ogg', volume: 0.3 });
-sound.load({ name: 'mystery-ship', url: './assets/mystery-ship.ogg' });
+sound.load({ name: 'mysteryShip', url: './assets/mystery-ship.ogg' });
 sound.load({ name: 'fire', url: './assets/fire.ogg' });
 sound.load({ name: 'explosion', url: './assets/explosion.ogg' });
 
@@ -180,7 +191,7 @@ sound.load({ name: 'explosion', url: './assets/explosion.ogg' });
 
 const defenderAnimation = {
   name: 'defender',
-  velocity: constant(settings.defenderVelocity),
+  velocity: constant(settings.defender.velocity),
   update: function () {
     setState(function (state) {
       return {
@@ -198,11 +209,10 @@ const defenderAnimation = {
 const invadersAnimation = {
   name: 'invaders',
   velocity: function () {
-    const { invadersMinVelocity, invadersIncrementVelocity } = settings;
+    const { minVelocity, incrementVelocity } = settings.invader;
 
-    return getState(function (state) {
-      const invadersLength = state.invaders.length;
-      return invadersMinVelocity + invadersLength * invadersIncrementVelocity;
+    return getState(function ({ invaders }) {
+      return minVelocity + invaders.length * incrementVelocity;
     });
   },
   update: function () {
@@ -225,7 +235,7 @@ const invadersAnimation = {
 
 const projectilesAnimation = {
   name: 'projectiles',
-  velocity: constant(settings.projectilesVelocity),
+  velocity: constant(settings.projectile.velocity),
   update: function () {
     setState(function (state) {
       return {
@@ -241,9 +251,51 @@ const projectilesAnimation = {
   }
 };
 
+const mysteryShipSpawnAnimation = {
+  name: 'mysteryShipSpawn',
+  velocity: constant(settings.mysteryShip.spawnVelocity),
+  update: function () {
+    sound.play('mysteryShip', { loop: true });
+
+    setState(function (state) {
+      return {
+        ...state,
+        mysteryShip: {
+          x: settings.grid.cols,
+          y: 0
+        }
+      };
+    });
+  }
+};
+
+const mysteryShipAnimation = {
+  name: 'mysteryShip',
+  velocity: constant(settings.mysteryShip.velocity),
+  update: function () {
+    setState(function (state) {
+      const { mysteryShip } = state;
+
+      if (!mysteryShip) {
+        return state;
+      }
+
+      return {
+        ...state,
+        mysteryShip: {
+          ...mysteryShip,
+          x: mysteryShip.x - 1
+        }
+      };
+    });
+  }
+};
+
 animation.add(defenderAnimation);
 animation.add(invadersAnimation);
 animation.add(projectilesAnimation);
+animation.add(mysteryShipSpawnAnimation);
+animation.add(mysteryShipAnimation);
 
 // ---------
 // Colliders
@@ -252,9 +304,8 @@ animation.add(projectilesAnimation);
 const defenderOutOfBoundsCollider = {
   animations: ['defender'],
   respond: function () {
-    const { gridCols } = settings;
     const rowStart = 0;
-    const rowEnd = gridCols - 1;
+    const rowEnd = settings.grid.cols - 1;
 
     setState(function (state) {
       let x = state.defender.x;
@@ -278,12 +329,11 @@ const defenderOutOfBoundsCollider = {
   }
 };
 
-const invadersOutOfBoundsCollider = {
+const invaderOutOfBoundsCollider = {
   animations: ['invaders'],
   respond: function () {
-    const { gridCols } = settings;
     const rowStart = 0;
-    const rowEnd = gridCols - 1;
+    const rowEnd = settings.grid.cols - 1;
 
     setState(function (state) {
       if (!state.invaders.length) {
@@ -322,35 +372,36 @@ const invadersOutOfBoundsCollider = {
   }
 };
 
-const invadersLandingCollider = {
+const invaderLandingCollider = {
   animations: ['invaders'],
   respond: function () {
-    setState(function (state) {
-      const { gridRows } = settings;
-      const colEnd = gridRows - 1;
+    const invaderLanded = getState(function (state) {
+      const rowEnd = settings.grid.rows - 1;
 
-      const invaderLanded = state.invaders.some(function (invader) {
-        return invader.y === colEnd;
+      return state.invaders.some(function (invader) {
+        return invader.y === rowEnd;
       });
+    });
 
-      let currentMenu = state.currentMenu;
-      let defender = state.defender;
+    if (!invaderLanded) {
+      return;
+    }
 
-      if (invaderLanded) {
-        currentMenu = menu.gameover;
-        defender = null;
-      }
+    animation.stop();
+    sound.stop('mysteryShip');
 
+    setState(function (state) {
       return {
         ...state,
-        defender,
-        currentMenu
+        currentMenu: menu.gameover,
+        defender: null,
+        mysteryShip: null
       };
     });
   }
 };
 
-const projectilesOutOfBoundsCollider = {
+const projectileOutOfBoundsCollider = {
   animations: ['projectiles'],
   respond: function () {
     setState(function (state) {
@@ -364,12 +415,10 @@ const projectilesOutOfBoundsCollider = {
   }
 };
 
-const projectilesHitCollider = {
+const projectileHitsInvaderCollider = {
   animations: ['projectiles', 'invaders'],
   respond: function () {
-    const collisions = getState(function (state) {
-      const { invaders, projectiles } = state;
-
+    const collisions = getState(function ({ invaders, projectiles }) {
       return invaders.filter(function (invader) {
         return projectiles.some(function (projectile) {
           return projectile.x === invader.x && projectile.y === invader.y;
@@ -383,11 +432,11 @@ const projectilesHitCollider = {
 
     sound.play('explosion');
 
-    const scoreIncrement = collisions.reduce(function (acc, collision) {
-      return acc + invaderScore[collision.type];
-    }, 0);
-
     setState(function (state) {
+      const scoreIncrement = collisions.reduce(function (acc, collision) {
+        return acc + settings.score.invaderType[collision.type];
+      }, 0);
+
       const projectiles = state.projectiles.filter(function (projectile) {
         return !collisions.find(function (collision) {
           return projectile.x === collision.x && projectile.y === collision.y;
@@ -415,23 +464,84 @@ const projectilesHitCollider = {
         invaders
       };
     });
+
+    getState(function (state) {
+      if (!state.invaders.length) {
+        animation.stop();
+        sound.stop('mysteryShip');
+      }
+    });
+  }
+};
+
+const mysteryShipOutOfBoundsCollider = {
+  animations: ['mysteryShip'],
+  respond: function () {
+    const rowStart = 0;
+
+    const isOutOfBounds = getState(function ({ mysteryShip }) {
+      return mysteryShip && mysteryShip.x < rowStart;
+    });
+
+    if (!isOutOfBounds) {
+      return;
+    }
+
+    sound.stop('mysteryShip');
+
+    setState(function (state) {
+      return {
+        ...state,
+        mysteryShip: null
+      };
+    });
+  }
+};
+
+const projectileHitsMysteryShipCollider = {
+  animations: ['projectiles', 'mysteryShip'],
+  respond: function () {
+    const collision = getState(function ({ projectiles, mysteryShip }) {
+      if (!mysteryShip) {
+        return;
+      }
+
+      return projectiles.find(function (projectile) {
+        return projectile.x === mysteryShip.x && projectile.y === mysteryShip.y;
+      });
+    });
+
+    if (!collision) {
+      return;
+    }
+
+    sound.stop('mysteryShip');
+    sound.play('explosion');
+    const scoreIncrement = settings.score.mysteryShip;
+
+    setState(function (state) {
+      const projectiles = state.projectiles.filter(function (projectile) {
+        return projectile.x === collision.x && projectile.y === collision.y;
+      });
+
+      return {
+        ...state,
+        score: state.score + scoreIncrement,
+        projectiles,
+        explosions: [...state.explosions, collision],
+        mysteryShip: null
+      };
+    });
   }
 };
 
 collider.add(defenderOutOfBoundsCollider);
-collider.add(invadersOutOfBoundsCollider);
-collider.add(invadersLandingCollider);
-collider.add(projectilesOutOfBoundsCollider);
-collider.add(projectilesHitCollider);
-
-// ---------------
-// State listeners
-// ---------------
-
-onStateChange(function ({ currentMenu }) {
-  const action = currentMenu === menu.none ? 'run' : 'stop';
-  animation[action]();
-});
+collider.add(invaderOutOfBoundsCollider);
+collider.add(invaderLandingCollider);
+collider.add(projectileOutOfBoundsCollider);
+collider.add(projectileHitsInvaderCollider);
+collider.add(mysteryShipOutOfBoundsCollider);
+collider.add(projectileHitsMysteryShipCollider);
 
 // ----
 // Init

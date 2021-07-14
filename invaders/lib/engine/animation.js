@@ -1,5 +1,3 @@
-import { invoke } from './fp.js';
-
 const animations = [];
 let isAnimationRunning = false;
 
@@ -37,8 +35,18 @@ export const applyAnimations = function (elapsed) {
 
     if (animation.timeLeft <= 0) {
       animation.update();
-      animation.colliders.forEach(invoke);
+
+      animation.colliders.forEach(function (collider) {
+        collider.respond();
+      });
+
       animation.timeLeft += animation.velocity();
     }
+  });
+};
+
+export const resetAnimations = function () {
+  animations.forEach(function (animation) {
+    animation.timeLeft = animation.velocity();
   });
 };

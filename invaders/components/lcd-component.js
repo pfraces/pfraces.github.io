@@ -1,4 +1,4 @@
-import { h } from '../lib/game-engine.js';
+import { h } from '../lib/engine/engine.js';
 import { constant } from '../lib/fp.js';
 import { settings } from '../settings.js';
 
@@ -47,13 +47,11 @@ const lcdNumber = function (number) {
 };
 
 export const lcdComponent = function ({ number }) {
-  const { fontSize } = settings;
-
   return h(
     'pre.lcd',
     {
       style: {
-        fontSize: `calc(${fontSize} * 0.5)`
+        fontSize: `calc(${settings.theme.fontSize} * 0.5)`
       }
     },
     lcdNumber(number)

@@ -1,5 +1,3 @@
-import { invoke } from './fp.js';
-
 let pressedKeys = [];
 const keyBindings = {};
 
@@ -12,13 +10,16 @@ export const addKeyBinding = function (key, listener) {
 };
 
 export const applyKeyBindings = function () {
-  pressedKeys.forEach(function (key) {
-    if (!keyBindings[key]) {
-      return;
-    }
-
-    keyBindings[key].forEach(invoke);
-  });
+  pressedKeys
+    .filter(function (pressedKey) {
+      return keyBindings[pressedKey];
+    })
+    .flatMap(function (pressedKey) {
+      return keyBindings[pressedKey];
+    })
+    .forEach(function (listener) {
+      listener();
+    });
 };
 
 export const resetPressedKeys = function () {

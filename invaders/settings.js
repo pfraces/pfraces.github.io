@@ -1,19 +1,38 @@
 export const settings = {
-  fontSize: '20px',
-  cellSize: '32px',
-  gridCols: 17,
-  gridRows: 17,
-  invaderCols: 11,
-  invaderRows: 5,
-  invadersMinVelocity: 50,
-  invadersIncrementVelocity: 15,
-  defenderVelocity: 50,
-  projectilesVelocity: 50,
-  maxConcurrentProjectiles: 1
-};
-
-export const invaderScore = {
-  alfa: 30,
-  beta: 20,
-  gamma: 10
+  theme: {
+    fontSize: '20px'
+  },
+  grid: {
+    cellSize: '32px',
+    cols: 17,
+    rows: 17
+  },
+  scene: {
+    invaderCols: 11,
+    invaderRows: 5
+  },
+  score: {
+    mysteryShip: 100,
+    invaderType: {
+      alfa: 30,
+      beta: 20,
+      gamma: 10
+    }
+  },
+  invader: {
+    minVelocity: 50,
+    incrementVelocity: 15
+  },
+  defender: {
+    velocity: 50
+  },
+  projectile: {
+    velocity: 50,
+    maxConcurrency: 1,
+    cooldown: 0
+  },
+  mysteryShip: {
+    velocity: 250,
+    spawnVelocity: 15000
+  }
 };

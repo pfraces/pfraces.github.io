@@ -1,26 +1,21 @@
-import { init, styleModule } from '../_snowpack/pkg/snabbdom.js';
 import {
   addKeyBinding,
   applyKeyBindings,
   resetPressedKeys,
   listenKeyboard
 } from './keyboard.js';
-import { loadSound, playSound } from './sound.js';
+import { loadSound, playSound, pauseSound } from './sound.js';
 import {
   runAnimation,
   stopAnimation,
   addAnimation,
-  applyAnimations
+  applyAnimations,
+  resetAnimations
 } from './animation.js';
 import { addCollider } from './collider.js';
+import { patch } from './vdom.js';
 
-export { h } from '../_snowpack/pkg/snabbdom.js';
-
-const patch = init([styleModule]);
-
-// --------
-// Keyboard
-// --------
+export { h } from './vdom.js';
 
 export const keyboard = {
   bind: addKeyBinding,
@@ -28,36 +23,22 @@ export const keyboard = {
   listen: listenKeyboard
 };
 
-// -----
-// Sound
-// -----
-
 export const sound = {
   load: loadSound,
-  play: playSound
+  play: playSound,
+  stop: pauseSound
 };
-
-// ---------
-// Animation
-// ---------
 
 export const animation = {
   run: runAnimation,
   stop: stopAnimation,
-  add: addAnimation
+  add: addAnimation,
+  reset: resetAnimations
 };
-
-// --------
-// Collider
-// --------
 
 export const collider = {
   add: addCollider
 };
-
-// ---------
-// Game loop
-// ---------
 
 export const mount = function (root, component) {
   let vnode = component();

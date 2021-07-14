@@ -1,16 +1,14 @@
-import { h } from '../lib/game-engine.js';
+import { h } from '../lib/engine/engine.js';
 import { constant } from '../lib/fp.js';
 import { menu } from '../model.js';
 import { settings } from '../settings.js';
 
 const menuTitleComponent = function () {
-  const { fontSize } = settings;
-
   return h(
     'pre.menu-title',
     {
       style: {
-        fontSize: `calc(${fontSize} * 0.75)`
+        fontSize: `calc(${settings.theme.fontSize} * 0.75)`
       }
     },
     [
