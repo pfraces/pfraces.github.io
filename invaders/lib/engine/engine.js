@@ -4,12 +4,12 @@ import {
   resetPressedKeys,
   listenKeyboard
 } from './keyboard.js';
-import { loadSound, playSound, pauseSound } from './sound.js';
+import { addSound, playSound, stopSound } from './sound.js';
 import {
-  runAnimation,
-  stopAnimation,
   addAnimation,
   applyAnimations,
+  runAnimation,
+  stopAnimation,
   resetAnimations
 } from './animation.js';
 import { addCollider } from './collider.js';
@@ -24,15 +24,15 @@ export const keyboard = {
 };
 
 export const sound = {
-  load: loadSound,
+  add: addSound,
   play: playSound,
-  stop: pauseSound
+  stop: stopSound
 };
 
 export const animation = {
+  add: addAnimation,
   run: runAnimation,
   stop: stopAnimation,
-  add: addAnimation,
   reset: resetAnimations
 };
 
@@ -45,11 +45,11 @@ export const mount = function (root, component) {
   let timestamp = 0;
 
   const gameLoop = function (newTimestamp) {
-    const elapsed = newTimestamp - timestamp;
+    const delta = newTimestamp - timestamp;
 
     if (timestamp > 0) {
       applyKeyBindings();
-      applyAnimations(elapsed);
+      applyAnimations(delta);
     }
 
     const newVnode = component();

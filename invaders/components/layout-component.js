@@ -9,7 +9,7 @@ const canvasComponent = function ({ state }) {
   const { fontSize } = settings.theme;
 
   const {
-    currentMenu,
+    menuId,
     score,
     invaders,
     projectiles,
@@ -36,7 +36,7 @@ const canvasComponent = function ({ state }) {
         mysteryShip
       }),
       statsLayerComponent({ score }),
-      menuLayerComponent({ currentMenu })
+      menuLayerComponent({ menuId })
     ]
   );
 };

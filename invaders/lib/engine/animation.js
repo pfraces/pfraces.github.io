@@ -1,17 +1,9 @@
 const animations = [];
 let isAnimationRunning = false;
 
-export const runAnimation = function () {
-  isAnimationRunning = true;
-};
-
-export const stopAnimation = function () {
-  isAnimationRunning = false;
-};
-
-export const addAnimation = function ({ name, velocity, update }) {
+export const addAnimation = function ({ id, velocity, update }) {
   animations.push({
-    name,
+    id,
     velocity,
     update,
     timeLeft: velocity(),
@@ -19,19 +11,19 @@ export const addAnimation = function ({ name, velocity, update }) {
   });
 };
 
-export const getAnimation = function (name) {
+export const getAnimation = function (id) {
   return animations.find(function (animation) {
-    return animation.name === name;
+    return animation.id === id;
   });
 };
 
-export const applyAnimations = function (elapsed) {
+export const applyAnimations = function (delta) {
   if (!isAnimationRunning) {
     return;
   }
 
   animations.forEach(function (animation) {
-    animation.timeLeft -= elapsed;
+    animation.timeLeft -= delta;
 
     if (animation.timeLeft <= 0) {
       animation.update();
@@ -43,6 +35,14 @@ export const applyAnimations = function (elapsed) {
       animation.timeLeft += animation.velocity();
     }
   });
+};
+
+export const runAnimation = function () {
+  isAnimationRunning = true;
+};
+
+export const stopAnimation = function () {
+  isAnimationRunning = false;
 };
 
 export const resetAnimations = function () {

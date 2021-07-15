@@ -19,6 +19,10 @@ export const settings = {
       gamma: 10
     }
   },
+  mysteryShip: {
+    velocity: 250,
+    spawnVelocity: 15000
+  },
   invader: {
     minVelocity: 50,
     incrementVelocity: 15
@@ -30,9 +34,5 @@ export const settings = {
     velocity: 50,
     maxConcurrency: 1,
     cooldown: 0
-  },
-  mysteryShip: {
-    velocity: 250,
-    spawnVelocity: 15000
   }
 };

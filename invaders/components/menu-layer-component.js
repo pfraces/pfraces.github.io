@@ -54,26 +54,26 @@ const menuContentGameOverComponent = function () {
   ]);
 };
 
-export const menuLayerComponent = function ({ currentMenu }) {
-  if (currentMenu === menu.none) {
+export const menuLayerComponent = function ({ menuId }) {
+  if (menuId === menu.none) {
     return null;
   }
 
   let menuContentComponent = constant(null);
 
-  if (currentMenu === menu.controls) {
+  if (menuId === menu.controls) {
     menuContentComponent = menuContentControlsComponent;
   }
 
-  if (currentMenu === menu.pause) {
+  if (menuId === menu.pause) {
     menuContentComponent = menuContentPauseComponent;
   }
 
-  if (currentMenu === menu.youwin) {
+  if (menuId === menu.youwin) {
     menuContentComponent = menuContentYouWinComponent;
   }
 
-  if (currentMenu === menu.gameover) {
+  if (menuId === menu.gameover) {
     menuContentComponent = menuContentGameOverComponent;
   }
 

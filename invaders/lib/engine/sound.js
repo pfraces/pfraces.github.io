@@ -1,21 +1,23 @@
 const sounds = {};
 
-export const loadSound = function ({ name, url, volume = 1 }) {
-  const sound = new Audio(url);
-  sound.volume = volume;
-  sounds[name] = sound;
-};
-
-export const playSound = function (name, options = {}) {
-  const defaults = { currentTime: 0, loop: false };
+export const addSound = function ({ id, url, ...options }) {
+  const defaults = { volume: 1, loop: false };
   const settings = { ...defaults, ...options };
 
-  const sound = sounds[name];
-  sound.currentTime = settings.currentTime;
+  const sound = new Audio(url);
+  sound.volume = settings.volume;
   sound.loop = settings.loop;
+
+  sounds[id] = sound;
+};
+
+export const playSound = function (id) {
+  const sound = sounds[id];
+  sound.currentTime = 0;
   sound.play();
 };
 
-export const pauseSound = function (name) {
-  sounds[name].pause();
+export const stopSound = function (id) {
+  const sound = sounds[id];
+  sound.pause();
 };
