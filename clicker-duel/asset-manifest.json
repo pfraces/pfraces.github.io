@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/clicker-duel/static/css/main.f60464c2.css",
-    "main.js": "/clicker-duel/static/js/main.432f8907.js",
+    "main.js": "/clicker-duel/static/js/main.c5af7112.js",
     "index.html": "/clicker-duel/index.html",
     "main.f60464c2.css.map": "/clicker-duel/static/css/main.f60464c2.css.map",
-    "main.432f8907.js.map": "/clicker-duel/static/js/main.432f8907.js.map"
+    "main.c5af7112.js.map": "/clicker-duel/static/js/main.c5af7112.js.map"
   },
   "entrypoints": [
     "static/css/main.f60464c2.css",
-    "static/js/main.432f8907.js"
+    "static/js/main.c5af7112.js"
   ]
 }
